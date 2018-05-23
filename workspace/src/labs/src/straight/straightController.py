@@ -3,7 +3,7 @@
 import rospy
 from barc.msg import ECU, Encoder
 from pid import PID
-from observer import EncoderModel, ImuModel
+from observer import EncoderModel, ImuModel, Observer
 from sensor_msgs.msg import Imu
 from numpy.random import uniform
 from numpy import around
@@ -13,6 +13,7 @@ def main():
     # initialize velocity estimator
     enc = EncoderModel()
     imu = ImuModel()
+    obs = Observer()
 
     # initialize node, set topic subscriptions / publications
     rospy.init_node('straightController', anonymous=True)
@@ -41,14 +42,14 @@ def main():
     pid_servo.setPoint(0.0)
 
     # sample input parameters for drift
-    s               = 3.0
+    s               = -1.0
     Dt              = uniform(0,0.8)
-    #F1              = int( uniform( a, b ) )
-    #df              = int( uniform( a, b ) )
+    F1              = int( uniform( 1850, 1950 ) )
+    df              = int( uniform( 1850, 1900 ) )
     F2              = 990   # brake
 
     u_motor_neutral = 1500
-    u_servo_neutral = 1500
+    u_servo_neutral = 1540
     u_motor         = u_motor_neutral
     u_servo         = u_servo_neutral
 
@@ -107,9 +108,10 @@ def main():
         """
 
         # publish control command
-        #rospy.logwarn("v1 = {}".format(enc.vhat_m1))
+        rospy.logwarn("v1 = {}".format(enc.vhat_m1))
         #rospy.logwarn("s1 = {}".format(enc.s_m1))
         #rospy.logwarn("yaw = {}".format(imu.dy))
+
         ecu_pub.publish( ECU(u_motor, u_servo) )
 
         # wait
