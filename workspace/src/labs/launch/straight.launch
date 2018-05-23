@@ -12,10 +12,10 @@
         <param name="baud_rate" value="115200" />
     </node>
 
-    <!-- Drift Controller -->
+    <!-- Straight Controller -->
     <node pkg="labs" type="straightController.py" name="controller" output="screen" >
         <param name="loop_rate" type="int" value="50" />
-        <param name="v_ref" type="double" value="1" /> <!-- 0.3 good speed --> 
+        <param name="v_ref" type="double" value="0.5" /> <!-- 0.3 good speed --> 
 
         <!-- PID Control for CL segment -->
         <!-- Motor PID -->
