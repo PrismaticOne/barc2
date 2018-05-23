@@ -15,7 +15,7 @@
     <!-- Straight Controller -->
     <node pkg="labs" type="straightController.py" name="controller" output="screen" >
         <param name="loop_rate" type="int" value="50" />
-        <param name="v_ref" type="double" value="0.3" />
+        <param name="v_ref" type="double" value="0.5" />
 
         <!-- PID Control for CL segment -->
         <!-- Motor PID -->
@@ -24,8 +24,8 @@
         <param name="Dm" type="double" value="0" />
 
         <!-- Servo PID -->
-        <param name="Ps" type="double" value="1" />
-        <param name="Is" type="double" value="1" />
+        <param name="Ps" type="double" value="20" />
+        <param name="Is" type="double" value="5" />
         <param name="Ds" type="double" value="0" />
     </node>
 
