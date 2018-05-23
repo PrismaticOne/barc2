@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 
+# Author: Tony Zheng
+# MEC231A BARC Project 
+
 import rospy
 import time
-from barc.msg import ECU, Encoder, Z_KinBkMdl
+from geometry_msgs.msg import Twist
+from barc.msg import ECU, Input, Moving, Encoder
 from numpy import pi
+
 
 # from encoder
 v_meas      = 0.0
@@ -17,30 +22,9 @@ n_BR        = 0.0
 r_tire      = 0.05 # radius of the tire
 
 # pwm cmds
-servo_pwm   = 1580.0
 motor_pwm   = 1500.0
-motor_pwm_offset = 1580.0
-servo_pwm_offset = 1600.0
+motor_pwm_offset = 1550.0
 
-# state estimate
-x_est = 0.0
-y_est = 0.0
-
-# lateral error
-lateral_error = 0.0
-
-# references
-v_ref = 0.5 # reference speed, unit: m/s
-x_center = 0.2774
-y_center = 0.2935
-radius = 9.7690
-
-# lateral error calculation
-def lateral_error_cal(x_est, y_est):
-    global lateral_error
-    x_ref = x_center + radius*(x_est - x_center)/sqrt((x_est-x_center)**2 + (y_est-y_center)**2)
-    y_ref = y_center + radius*(y_est - y_center)/sqrt((x_est-x_center)**2 + (y_est-y_center)**2)
-    lateral_error = sqrt((x_ref-x_center)**2 + (y_ref-y_center)**2) - radius
 
 # encoder measurement update
 def enc_callback(data):
@@ -54,7 +38,7 @@ def enc_callback(data):
     n_BR = data.BR
 
     # compute the average encoder measurement
-    n_mean = (n_FL + n_FR + n_BL + n_BR)/4
+    n_mean = (n_FL + n_FR )/2
 
     # transfer the encoder measurement to angular displacement
     ang_mean = n_mean*2*pi/8
@@ -72,18 +56,41 @@ def enc_callback(data):
     ang_km2 = ang_km1
     t0      = time.time()
 
-# state estimated from kalman filter
-def state_callback(data):
-    global x_est, y_est
 
-    x_est = data.x
-    y_est = data.y
-    lateral_error = lateral_error_cal(x_est, y_est)
+def start_callback(data):
+    global move, still_moving
+    #print("2")
+    #print(move)
+    if data.linear.x >0:
+        move = True
+    elif data.linear.x <0:
+        move = False
+    #print("3")
+    #print(move)
+    pubname.publish(newECU)
 
-# Insert your PID longitudinal controller here: since you are asked to do longitudinal control, 
-# the steering angle d_f can always be set to zero. Therefore, the control output of your controller 
-# is essentially longitudinal acceleration acc.
-# ===================================PID longitudinal controller================================#
+def moving_callback_function(data):
+    global still_moving, move
+    if data.moving == True:
+        still_moving = True
+    else:
+        move = False
+        still_moving = False
+
+# update
+def callback_function(data):
+    global move, still_moving, v_ref, servo_pwm
+    v_ref = data.vel
+    servo_pwm = (data.delta*180/3.1415-67.5)/-0.0346
+
+    servomax = 1840
+    servomin = 1160
+    if (servo_pwm<servomin):
+        servo_pwm = servomin
+    elif (servo_pwm>servomax):
+        servo_pwm = servomax     # input steering angle
+
+
 class PID():
     def __init__(self, kp=1, ki=1, kd=1, integrator=0, derivator=0):
         self.kp = kp
@@ -115,47 +122,69 @@ class PID():
         self.derivator = self.error
 
         acc = self.P_effect + self.I_effect + self.D_effect
+        
         if acc <= 0:
             acc = 20
         return acc
 
-# =====================================end of the controller====================================#
-
 # state estimation node
-def controller():
+def inputToPWM():
     global motor_pwm, servo_pwm, motor_pwm_offset, servo_pwm_offset
     global v_ref, v_meas
-    global lateral_error, x_est, y_est
-    # initialize node:
-    rospy.init_node('lateral_control', anonymous=True)
-
+    
+    # initialize node
+    rospy.init_node('inputToPWM', anonymous=True)
+    
+    global pubname , newECU , subname, move , still_moving
+    newECU = ECU() 
+    newECU.motor = 1500
+    newECU.servo = 1550
+    move = False
+    still_moving = False
+    #print("1")
+    #print(move)
     # topic subscriptions / publications
+    pubname = rospy.Publisher('ecu_pwm',ECU, queue_size = 2)
+    rospy.Subscriber('turtle1/cmd_vel', Twist, start_callback)
+    subname = rospy.Subscriber('uOpt', Input, callback_function)
+    rospy.Subscriber('moving', Moving, moving_callback_function)
     rospy.Subscriber('encoder', Encoder, enc_callback)
-    rospy.Subscriber('state_estimate', Z_KinBkMdl, state_callback)
-
-    ecu_pub   = rospy.Publisher('ecu_pwm', ECU, queue_size = 10)
-
     # set node rate
-    loop_rate   = 50
+    loop_rate   = 40
+    ts          = 1.0 / loop_rate
     rate        = rospy.Rate(loop_rate)
-
+    t0          = time.time()
+     
     # Initialize the PID controller
-    longitudinal_control = PID(kp=200, ki=0, kd=0.0)
-    lateral_control = PID(kp=50, ki=0, kd=0.0)
+    longitudinal_control = PID(kp=10, ki=5, kd=1)
+    maxspeed = 1650
+    minspeed = 1400
 
     while not rospy.is_shutdown():
-        # acceleration calculated from PID controller.
-        motor_pwm = longitudinal_control.acc_calculate(v_ref, v_meas) + motor_pwm_offset
-        servo_pwm = lateral_control.acc_calculate(0, lateral_error) + servo_pwm_offset
-        rospy.logwarn("pwm = {}".format(motor_pwm))
-        # publish information
-        ecu_pub.publish( ECU(motor_pwm, servo_pwm) )
+        try:
+            # acceleration calculated from PID controller
+            motor_pwm = longitudinal_control.acc_calculate(v_ref, v_meas) + motor_pwm_offset
+            if (motor_pwm<minspeed):
+                motor_pwm = minspeed
+            elif (motor_pwm>maxspeed):
+                motor_pwm = maxspeed
 
-        # wait
-        rate.sleep()
+            if ((move == False) or (still_moving == False)):
+                motor_pwm = 1500
+                servo_pwm = 1550
+
+            # publish information
+            pubname.publish( ECU(motor_pwm, servo_pwm) )
+
+            # wait
+            rate.sleep()
+        except:
+            pass
+
+
 
 if __name__ == '__main__':
     try:
-       controller()
+       inputToPWM()
     except rospy.ROSInterruptException:
         pass

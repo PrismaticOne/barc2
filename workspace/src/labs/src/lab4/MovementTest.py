@@ -26,7 +26,7 @@ import rospy
 import time
 
 motor_pwm = 1500
-servo_pwm = 1580
+servo_pwm = 1550
 
 def arduino_interface():
     global ecu_pub, motor_pwm, servo_pwm

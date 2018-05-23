@@ -8,18 +8,20 @@ from numpy import pi
 # from encoder
 v_meas      = 0.0
 t0          = time.time()
+r_tire      = 0.05 # radius of the tire
+servo_pwm   = 1580.0 # straight for barc21
+motor_pwm   = 1500.0
+motor_pwm_offset = 1500.0
 ang_km1     = 0.0
 ang_km2     = 0.0
 n_FL        = 0.0
 n_FR        = 0.0
 n_BL        = 0.0
 n_BR        = 0.0
-r_tire      = 0.05 # radius of the tire
-servo_pwm   = 1580.0
-motor_pwm   = 1500.0
-motor_pwm_offset = 1580.0
+
 # reference speed 
-v_ref = 1.0 # reference speed is 3 m/s
+v_ref = 0.2 # give reference speed is 0.5 m/s
+
 
 # encoder measurement update
 def enc_callback(data):
@@ -50,10 +52,6 @@ def enc_callback(data):
     ang_km2 = ang_km1
     t0      = time.time()
 
-
-# Insert your PID longitudinal controller here: since you are asked to do longitudinal control, 
-# the steering angle d_f can always be set to zero. Therefore, the control output of your controller 
-# is essentially longitudinal acceleration acc.
 # ===================================PID longitudinal controller================================#
 class PID():
     def __init__(self, kp=1, ki=1, kd=1, integrator=0, derivator=0):
@@ -94,29 +92,31 @@ class PID():
 
 # state estimation node
 def controller():
-    global motor_pwm, servo_pwm, motor_pwm_offset
-    global v_ref, v_meas
-    # initialize node:
+    global motor_pwm, servo_pwm, motor_pwm_offset ##########copy
+    global v_ref, v_meas ########copy
+    
+    # Initialize node:
     rospy.init_node('simulationGain', anonymous=True)
+    rospy.Subscriber('encoder', Encoder, enc_callback) ###### copy
 
-    # topic subscriptions / publications
-    rospy.Subscriber('encoder', Encoder, enc_callback)
-
+    # TODO: Add your necessary topic subscriptions / publications, depending on your preferred method of velocity estimation
+	# topic subscriptions / publications
+#rospy.Subscriber('encoder', Encoder, enc_callback)
     ecu_pub   = rospy.Publisher('ecu_pwm', ECU, queue_size = 10)
 
-    # set node rate
+    # Set node rate
     loop_rate   = 50
     rate        = rospy.Rate(loop_rate)
-
-    # Initialize the PID controller
-    PID_control = PID(kp=200, ki=0, kd=0.0)
-
+    
+    # TODO: Initialize your PID controller here, with your chosen PI gains
+    PID_control = PID(kp = 55, ki = 11, kd = 0) ####### copy
+    
     while not rospy.is_shutdown():
-        # acceleration calculated from PID controller.
-        motor_pwm = PID_control.acc_calculate(v_ref, v_meas) + motor_pwm_offset
-        rospy.logwarn("pwm = {}".format(motor_pwm))
-        # publish information
-        ecu_pub.publish( ECU(motor_pwm, servo_pwm) )
+        # calculate acceleration from PID controller.
+        motor_pwm = PID_control.acc_calculate(v_ref, v_meas) + motor_pwm_offset ###### copy
+ 
+        # publish control command
+        ecu_pub.publish( ECU(motor_pwm, servo_pwm) ) 
 
         # wait
         rate.sleep()
