@@ -42,7 +42,7 @@ def main():
     pid_servo.setPoint(0.0)
 
     # sample input parameters for drift
-    s               = -1.0
+    s               = -2.0
     Dt              = uniform(0,0.8)
     F1              = int( uniform( 1850, 1950 ) )
     df              = int( uniform( 1850, 1900 ) )
@@ -69,7 +69,7 @@ def main():
         t   = now.secs + now.nsecs/(10.0**9) - t0
         
         # get vehicle into initial state
-        if enc.s_m1 < s:
+        if enc.s_m1 > s:
             if not straight:
                 rospy.logwarn("Going straight ...")
                 straight = True
@@ -109,7 +109,7 @@ def main():
 
         # publish control command
         rospy.logwarn("v1 = {}".format(enc.vhat_m1))
-        #rospy.logwarn("s1 = {}".format(enc.s_m1))
+        rospy.logwarn("s1 = {}".format(enc.s_m1))
         #rospy.logwarn("yaw = {}".format(imu.dy))
 
         ecu_pub.publish( ECU(u_motor, u_servo) )
