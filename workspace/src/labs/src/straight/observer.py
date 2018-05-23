@@ -77,8 +77,7 @@ class EncoderModel:
         v_BR    = data.BR
         
         # compute speed and distance travelled
-        self.vhat_m2    = (v_FL + v_FR)/2
-        #  self.vhat_m2    = (v_BL + v_BR)/2
+        self.vhat_m2    = (v_BL + v_BR)/2
         self.s_m2       += self.vhat_m2 * dt
         self.t0_m2      = time.time()
 
@@ -297,7 +296,3 @@ class Observer():
             xp[i] = x[i]
             jac[:,i] = (yhi - ylo) / eps
         return jac
-<<<<<<< HEAD
-
-=======
->>>>>>> 7f9883cb982eed4d344b9d3753d21a422d995fa9

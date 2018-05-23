@@ -90,8 +90,4 @@ if __name__ == "__main__":
         x[i+1] = fx(x[i],u, dt)
 
     plt.plot(x)
-<<<<<<< HEAD
     plt.show()
-=======
-    plt.show()
->>>>>>> 7f9883cb982eed4d344b9d3753d21a422d995fa9

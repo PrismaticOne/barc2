@@ -15,7 +15,7 @@ def main():
     imu = ImuModel()
 
     # initialize node, set topic subscriptions / publications
-    rospy.init_node('driftController', anonymous=True)
+    rospy.init_node('straightController', anonymous=True)
     rospy.Subscriber('/encoder', Encoder, enc.estimateVelocityM1)
     rospy.Subscriber('/imu/data', Imu, imu.updateEstimates)
     ecu_pub   = rospy.Publisher('/ecu_pwm', ECU, queue_size = 10)
@@ -41,15 +41,14 @@ def main():
     pid_servo.setPoint(0.0)
 
     # sample input parameters for drift
-    s               = -1.0
+    s               = 3.0
     Dt              = uniform(0,0.8)
-    F1              = int( uniform( 1850, 1900 ) )
-    df              = int( uniform( 1850, 1900 ) )
+    #F1              = int( uniform( a, b ) )
+    #df              = int( uniform( a, b ) )
     F2              = 990   # brake
 
     u_motor_neutral = 1500
-    u_servo_neutral = 1540
-
+    u_servo_neutral = 1500
     u_motor         = u_motor_neutral
     u_servo         = u_servo_neutral
 
@@ -69,7 +68,6 @@ def main():
         t   = now.secs + now.nsecs/(10.0**9) - t0
         
         # get vehicle into initial state
-	if enc.s_m1 > s:
         if enc.s_m1 < s:
             if not straight:
                 rospy.logwarn("Going straight ...")
@@ -86,34 +84,32 @@ def main():
             u_servo = u_ff + int(u_fb)
 
             t_straight  = t
-     #   else:
-      #      u_motor = u_motor_neutral
-       #     u_servo = u_servo_neutral
+        else:
+            u_motor = u_motor_neutral
+            u_servo = u_servo_neutral
 
         # perform aggresive turn and accelerate
-        
-#        elif t < t_straight + Dt:
-#            if not turn:
-#                rospy.logwarn("Turning and accelerating ...")
-#                turn = True
-#            u_motor = F1 
-#            u_servo = df
+        """
+        elif t < t_straight + ???:
+            if not turn:
+                rospy.logwarn("Turning and accelerating ...")
+                turn = True
+            u_motor = ??? 
+            u_servo = ???
 
         # apply brake
         else:
             if not brake:   
                 rospy.logwarn("Braking ! ...")
                 brake = True
-
-            u_motor = 1500
-            u_servo = df
-        
+            u_motor = ???
+            u_servo = ???
+        """
 
         # publish control command
-        rospy.logwarn("v1 = {}".format(enc.vhat_m1))
-        rospy.logwarn("s1 = {}".format(enc.s_m1))
-        rospy.logwarn("yaw = {}".format(imu.dy))
-
+        #rospy.logwarn("v1 = {}".format(enc.vhat_m1))
+        #rospy.logwarn("s1 = {}".format(enc.s_m1))
+        #rospy.logwarn("yaw = {}".format(imu.dy))
         ecu_pub.publish( ECU(u_motor, u_servo) )
 
         # wait
