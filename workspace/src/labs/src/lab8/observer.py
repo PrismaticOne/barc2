@@ -297,7 +297,3 @@ class Observer():
             xp[i] = x[i]
             jac[:,i] = (yhi - ylo) / eps
         return jac
-<<<<<<< HEAD
-
-=======
->>>>>>> 7f9883cb982eed4d344b9d3753d21a422d995fa9

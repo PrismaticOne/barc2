@@ -70,7 +70,7 @@ def main():
         
         # get vehicle into initial state
 	if enc.s_m1 > s:
-        if enc.s_m1 < s:
+#        if enc.s_m1 < s:
             if not straight:
                 rospy.logwarn("Going straight ...")
                 straight = True
