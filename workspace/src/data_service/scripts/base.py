@@ -58,7 +58,8 @@ class Configurator(object):
         self.config = config
 
 
-CONFIG_LOCATION = os.path.expanduser("~") + "/default.cfg"
+CONFIG_LOCATION = "/home/odroid/default.cfg"
+
 
 def init_configurator(CONFIG_LOCATION=CONFIG_LOCATION):
     """ Register local computer if not done previously.

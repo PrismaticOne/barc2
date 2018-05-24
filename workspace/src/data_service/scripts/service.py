@@ -177,7 +177,6 @@ def handle_register_setting(req):
 
 
 def register_video(experiment, video_path):
-    print "inside register video ..."
     try:
         setting = data_connection.get_or_create_setting('video', experiment)
         data_connection.write_setting(video_path, setting['id'])
@@ -187,9 +186,7 @@ def register_video(experiment, video_path):
 
 
 def handle_register_video(req):
-    print "getting experiment ..."
     experiment = get_experiment(req.experiment)
-    print "getting response ..."
     response = register_video(experiment, req.path)
     print response
     return RegisterVideoResponse(response)
