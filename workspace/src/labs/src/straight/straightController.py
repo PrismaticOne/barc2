@@ -69,7 +69,7 @@ def main():
         t   = now.secs + now.nsecs/(10.0**9) - t0
         
         # get vehicle into initial state
-        if enc.s_m1 > s:
+    if enc.s_m1 < s: # weird tabbing
             if not straight:
                 rospy.logwarn("Going straight ...")
                 straight = True
@@ -103,8 +103,8 @@ def main():
             if not brake:   
                 rospy.logwarn("Braking ! ...")
                 brake = True
-            u_motor = ???
-            u_servo = ???
+            u_motor = F2
+            u_servo = u_servo_neutral
         """
 
         # publish control command
